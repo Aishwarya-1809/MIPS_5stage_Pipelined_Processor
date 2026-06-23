@@ -1,0 +1,52 @@
+module Hazard_Unit( 
+    input [4:0] rsD, rtD,         // Decode stage source registers
+    input [4:0] rsE, rtE,         // Execute stage source registers
+    input [4:0] WriteRegE, WriteRegM, WriteRegW, // Destination registers
+    input RegWriteE, RegWriteM, RegWriteW,        // Register write enables
+    input MemtoRegE,                   // Load indicator
+    input BranchD,                               // Branch in Decode
+
+    output reg [1:0] ForwardAE, ForwardBE,       // Forwarding controls for EX
+    output ForwardAD, ForwardBD,                 // Forwarding controls for branch compare
+    output reg StallF, StallD, FlushE            // Stall & flush controls
+);
+
+    //  Forwarding for Execute Stage 
+    always @(*) begin
+        ForwardAE = 2'b00;
+        ForwardBE = 2'b00;
+
+        // For rsE
+        if ((rsE != 0) && (rsE == WriteRegM) && RegWriteM)
+            ForwardAE = 2'b10;
+        else if ((rsE != 0) && (rsE == WriteRegW) && RegWriteW)
+            ForwardAE = 2'b01;
+
+        // For rtE
+        if ((rtE != 0) && (rtE == WriteRegM) && RegWriteM)
+            ForwardBE = 2'b10;
+        else if ((rtE != 0) && (rtE == WriteRegW) && RegWriteW)
+            ForwardBE = 2'b01;
+    end
+
+    // Stall Logic
+    wire lwstall, branchstall;
+    assign lwstall = MemtoRegE && ((rsD == rtE) || (rtD == rtE));
+    assign branchstall = 
+        (BranchD && RegWriteE && (rsD == WriteRegE || rtD == WriteRegE)) ||
+        (BranchD && RegWriteM && (rsD == WriteRegM || rtD == WriteRegM));
+
+    always @(*) begin
+        if (lwstall || branchstall) begin
+            StallF = 1; StallD = 1; FlushE = 1;
+        end else begin
+            StallF = 0; StallD = 0; FlushE = 0;
+        end
+    end
+
+    // Forwarding for Branch Compare 
+    assign ForwardAD = (rsD != 0) && (rsD == WriteRegM) && RegWriteM;
+    assign ForwardBD = (rtD != 0) && (rtD == WriteRegM) && RegWriteM;
+
+endmodule
+
