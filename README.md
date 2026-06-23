@@ -1,2 +1,2 @@
 # MIPS-32-Pipelined-Processor
-Designed and simulated a single-cycle MIPS processor handling key R-type instructions. The simulation verified  correct control signals, ALU operations, register updates and memory interactions for each instruction.
+A 32-bit 5-stage pipelined MIPS processor implemented in Verilog HDL featuring forwarding, hazard detection, branch handling, stalling and pipeline flushing.
